@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>VitaCheck AI</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,sans-serif;background:#fafafa;color:#1a1a1a}
+  :root{--teal:#0F6E56;--teal-light:#E1F5EE;--teal-mid:#1D9E75;--red:#D85A30;--red-light:#FAECE7}
+
+  /* NAV */
+  nav{background:#fff;border-bottom:0.5px solid #e0e0e0;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:100}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:600;font-size:18px;color:var(--teal)}
+  .logo span{font-size:11px;color:#888}
+  .nav-links{display:flex;gap:2px}
+  .nav-btn{background:none;border:none;cursor:pointer;padding:6px 11px;font-size:12.5px;border-radius:6px;color:#555;white-space:nowrap}
+  .nav-btn.active{background:var(--teal-light);color:var(--teal);font-weight:500}
+  .ham{display:none;background:none;border:none;font-size:22px;color:var(--teal);cursor:pointer}
+  .mobile-menu{display:none;flex-direction:column;gap:2px;background:#fff;border-bottom:0.5px solid #e0e0e0;padding:8px 1rem;position:sticky;top:64px;z-index:99}
+  .mobile-menu.open{display:flex}
+  .mobile-btn{background:none;border:none;cursor:pointer;padding:10px 12px;font-size:14px;border-radius:6px;color:#555;text-align:left}
+  .mobile-btn.active{background:var(--teal-light);color:var(--teal);font-weight:500}
+
+  /* PAGES */
+  .page{display:none}.page.active{display:block}
+
+  /* HOME */
+  .hero{background:linear-gradient(135deg,#E1F5EE 0%,#fff 60%);min-height:88vh;display:flex;align-items:center;justify-content:center;padding:3rem 2rem;gap:4rem;flex-wrap:wrap}
+  .hero-text{max-width:480px}
+  .badge{background:var(--teal-light);color:var(--teal);font-size:12px;font-weight:500;padding:4px 12px;border-radius:20px;letter-spacing:1px}
+  .hero h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:700;margin:1.2rem 0 0.5rem;line-height:1.15}
+  .hero h1 span{color:var(--red)}
+  .hero p{color:#666;font-size:16px;margin-bottom:2rem;line-height:1.7}
+  .hero-btns{display:flex;gap:12px;flex-wrap:wrap}
+  .btn-primary{background:var(--teal);color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:15px;font-weight:500;cursor:pointer}
+  .btn-outline{background:none;border:1.5px solid var(--teal);color:var(--teal);border-radius:8px;padding:12px 24px;font-size:15px;font-weight:500;cursor:pointer}
+  .widget{background:#fff;border-radius:16px;border:0.5px solid #e0e0e0;padding:1.5rem;min-width:280px;max-width:320px}
+  .widget h3{font-size:17px;font-weight:600;margin-bottom:12px}
+  .widget input{width:100%;padding:10px 14px;border:0.5px solid #d0d0d0;border-radius:8px;font-size:14px;margin-bottom:12px;background:#fafafa;cursor:pointer}
+  .quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+  .quick-btn{background:var(--red-light);color:var(--red);border:none;border-radius:8px;padding:10px;font-size:13px;cursor:pointer;font-weight:500}
+  .score-label{font-size:12px;color:#888;margin-bottom:4px}
+  .score-bar{background:#f0f0f0;border-radius:8px;height:8px;overflow:hidden}
+  .score-fill{width:85%;background:linear-gradient(90deg,var(--teal-mid),var(--teal));height:100%;border-radius:8px}
+  .score-val{color:var(--red);font-weight:600;margin-top:4px;font-size:14px}
+
+  /* SECTIONS */
+  .section{max-width:700px;margin:2rem auto;padding:0 1rem}
+  .section h2{color:var(--teal);margin-bottom:4px}
+  .section p.sub{color:#666;margin-bottom:1.5rem;font-size:14px}
+
+  /* SYMPTOM CHECKER */
+  .chat-box{border:0.5px solid #e0e0e0;border-radius:12px;overflow:hidden;background:#fff}
+  .chat-msgs{padding:1.25rem;min-height:380px;max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+  .msg{display:flex}.msg.user{justify-content:flex-end}
+  .bubble{max-width:80%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.6;white-space:pre-wrap}
+  .bubble.ai{background:var(--teal-light);color:#1a1a1a;border-radius:12px 12px 12px 2px}
+  .bubble.user{background:var(--teal);color:#fff;border-radius:12px 12px 2px 12px}
+  .chat-input{border-top:0.5px solid #e0e0e0;padding:0.75rem;display:flex;gap:8px}
+  .chat-input input{flex:1;padding:10px 14px;border:0.5px solid #d0d0d0;border-radius:8px;font-size:14px}
+  .chat-input button{background:var(--teal);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;cursor:pointer;font-weight:500}
+  .chat-input button:disabled{opacity:0.5;cursor:not-allowed}
+  .disclaimer{font-size:12px;color:#999;margin-top:8px;text-align:center}
+
+  /* AI INSIGHTS */
+  .topic-pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1.5rem}
+  .pill{background:var(--teal-light);color:var(--teal);border:none;border-radius:20px;padding:8px 16px;font-size:13px;cursor:pointer;font-weight:500}
+  .pill.active{background:var(--teal);color:#fff}
+  .insight-card{background:#fff;border:0.5px solid #e0e0e0;border-radius:12px;padding:1.5rem}
+  .insight-tag{background:var(--teal-light);color:var(--teal);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:500;display:inline-block;margin-bottom:1rem}
+  .insight-text{font-size:14px;line-height:1.8;color:#333;white-space:pre-wrap}
+  .empty{text-align:center;padding:3rem;color:#aaa;font-size:14px}
+
+  /* HEALTH TIPS */
+  .tips-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+  .tip-card{background:#fff;border:0.5px solid #e0e0e0;border-radius:12px;padding:1.25rem;cursor:pointer}
+  .tip-card.open{border-color:var(--teal)}
+  .tip-icon{font-size:24px;margin-bottom:8px}
+  .tip-title{font-weight:500;color:var(--teal);margin-bottom:8px}
+  .tip-card ul{padding-left:16px;font-size:13px;color:#444;line-height:1.8}
+  .tip-hint{font-size:12px;color:#999}
+
+  /* DASHBOARD */
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:2rem}
+  .stat{background:var(--teal-light);border-radius:10px;padding:1rem;text-align:center}
+  .stat-val{font-size:20px;font-weight:600;color:var(--teal)}
+  .stat-label{font-size:12px;color:#555;margin-top:2px}
+  .history-list{display:flex;flex-direction:column;gap:10px}
+  .history-item{background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  .h-symptoms{font-weight:500;font-size:14px}
+  .h-date{font-size:12px;color:#999;margin-top:2px}
+  .h-right{display:flex;align-items:center;gap:10px}
+  .status-badge{border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500}
+  .h-score{font-weight:600;color:var(--teal);font-size:16px}
+  .clear-btn{background:none;border:0.5px solid var(--red);color:var(--red);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer}
+  .dash-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+  .empty-dash{text-align:center;padding:3rem;color:#aaa;border:0.5px dashed #ddd;border-radius:12px;font-size:14px}
+
+  /* ABOUT */
+  .about-hero{background:var(--teal-light);border-radius:12px;padding:2rem;margin-bottom:2rem;text-align:center}
+  .about-hero h2{color:var(--teal);margin:8px 0}
+  .about-hero p{color:#444;font-size:14px;line-height:1.8;max-width:480px;margin:0 auto}
+  .values-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:2rem}
+  .value-card{background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:1rem}
+  .value-title{font-weight:500;color:var(--teal);margin-bottom:4px}
+  .value-desc{font-size:13px;color:#555;line-height:1.6}
+  .contact-form{background:#fff;border:0.5px solid #e0e0e0;border-radius:12px;padding:1.5rem;display:flex;flex-direction:column;gap:10px}
+  .contact-form input,.contact-form textarea{padding:10px 14px;border:0.5px solid #d0d0d0;border-radius:8px;font-size:14px;font-family:inherit}
+  .contact-form textarea{resize:vertical}
+  .auth-error{color:#D85A30;font-size:13px;margin-top:8px}
+  .auth-success{color:var(--teal);font-size:13px;margin-top:8px}
+  .btn-outline{background:none;border:1.5px solid var(--teal);color:var(--teal);border-radius:8px;padding:12px 24px;font-size:15px;font-weight:500;cursor:pointer}
+  .success-msg{background:var(--teal-light);border-radius:10px;padding:1.5rem;text-align:center;color:var(--teal);font-weight:500}
+
+  @media(max-width:620px){.nav-links{display:none}.ham{display:block}}
+
+  /* PRINT */
+  .print-btn{background:none;border:1px solid #999;color:#555;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .print-btn:hover{background:#f5f5f5}
+  @media print{body{background:#fff}nav,#sendBtn,.chat-input,.disclaimer,.mobile-menu,.ham,.print-btn,.clear-btn,.btn-outline,.quick-grid{display:none!important}.page{display:block!important}.section{max-width:100%;margin:0;padding:1rem}.print-report{page-break-inside:avoid;border:1px solid #ddd;border-radius:8px;padding:1.5rem;margin-bottom:1rem;background:#fff}.print-header{border-bottom:2px solid var(--teal);padding-bottom:1rem;margin-bottom:1rem}.print-header h2{color:var(--teal);margin:0}.print-date{color:#999;font-size:12px}.report-section{margin-bottom:1.5rem}.report-section h3{color:var(--teal);font-size:14px;margin-bottom:0.5rem}.report-value{font-size:14px;margin-bottom:8px;line-height:1.6}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">
+    <svg width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="18" fill="#E1F5EE"/><path d="M18 10v16M10 18h16" stroke="#0F6E56" stroke-width="3" stroke-linecap="round"/><path d="M12 14c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="#D85A30" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+    VitaCheck <span>AI</span>
+  </div>
+  <div class="nav-links" id="navLinks"></div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span id="userLabel" style="color:#555;font-size:14px;display:none"></span>
+    <button class="nav-btn" id="logoutBtn" style="display:none;background:none;border:1px solid var(--red);color:var(--red);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12.5px" onclick="logout()">Logout</button>
+  </div>
+  <button class="ham" onclick="toggleMenu()">☰</button>
+</nav>
+<div class="mobile-menu" id="mobileMenu"></div>
+
+<!-- LOGIN -->
+<div class="page" id="page-Login">
+  <div class="section" style="max-width:420px;margin:4rem auto;">
+    <h2>Welcome Back</h2>
+    <p class="sub">Sign in to access VitaCheck offline health assistant.</p>
+    <div class="contact-form">
+      <input id="loginEmail" type="email" placeholder="Email address" autocomplete="username"/>
+      <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password"/>
+      <button class="btn-primary" onclick="login()">Sign In</button>
+      <p style="font-size:14px;color:#555;margin-top:12px">New here?
+        <button class="btn-outline" style="padding:8px 14px;font-size:13px" onclick="goTo('Signup')">Create account</button>
+      </p>
+      <div id="authMessage" style="color:#D85A30;font-size:13px;margin-top:8px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SIGNUP -->
+<div class="page" id="page-Signup">
+  <div class="section" style="max-width:420px;margin:4rem auto;">
+    <h2>Create Account</h2>
+    <p class="sub">Sign up once and use VitaCheck offline anytime.</p>
+    <div class="contact-form">
+      <input id="signupName" placeholder="Full name" autocomplete="name"/>
+      <input id="signupEmail" type="email" placeholder="Email address" autocomplete="email"/>
+      <input id="signupPassword" type="password" placeholder="Password" autocomplete="new-password"/>
+      <input id="signupConfirm" type="password" placeholder="Confirm password" autocomplete="new-password"/>
+      <button class="btn-primary" onclick="signup()">Sign Up</button>
+      <p style="font-size:14px;color:#555;margin-top:12px">Already have an account?
+        <button class="btn-outline" style="padding:8px 14px;font-size:13px" onclick="goTo('Login')">Sign In</button>
+      </p>
+      <div id="authMessageSignup" style="color:#D85A30;font-size:13px;margin-top:8px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- HOME -->
+<div class="page active" id="page-Home">
+  <div class="hero">
+    <div class="hero-text">
+      <span class="badge">AI POWERED HEALTH ASSISTANT</span>
+      <h1>Your AI Health<br><span>Assistant</span> in Seconds</h1>
+      <p>Check your symptoms, get AI-powered insights instantly — built for patients and caregivers.</p>
+      <div class="hero-btns">
+        <button class="btn-primary" onclick="goTo('Symptom Checker')">Start Health Check</button>
+        <button class="btn-outline" onclick="goTo('About & Contact')">Learn More</button>
+      </div>
+    </div>
+    <div class="widget">
+      <h3>Hello 👋</h3>
+      <input readonly placeholder="Describe your symptoms..." onclick="goTo('Symptom Checker')"/>
+      <div class="quick-grid">
+        <button class="quick-btn" onclick="goTo('Symptom Checker')">Symptom Checker</button>
+        <button class="quick-btn" onclick="goTo('AI Insights')">AI Insights</button>
+        <button class="quick-btn" onclick="goTo('Health Tips')">Health Tips</button>
+        <button class="quick-btn" onclick="goTo('Dashboard')">Dashboard</button>
+      </div>
+      <div class="score-label">AI Health Score <span id="heroScoreLabel"></span></div>
+      <div class="score-bar"><div class="score-fill" id="heroScoreFill"></div></div>
+      <div class="score-val" id="heroScoreVal">85 / 100</div>
+    </div>
+  </div>
+</div>
+
+<!-- SYMPTOM CHECKER -->
+<div class="page" id="page-Symptom Checker">
+  <div class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:1rem">
+      <div><h2>Symptom Checker</h2></div>
+      <button class="print-btn" id="printSymptomBtn" onclick="printSymptomResult()" style="display:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path></svg>Print Report</button>
+    </div>
+    <p class="sub">Describe how you're feeling. Each check is saved to your dashboard.</p>
+    <div class="chat-box">
+      <div class="chat-msgs" id="chatMsgs">
+        <div class="msg"><div class="bubble ai">Hi! I'm VitaCheck AI. Describe your symptoms and I'll give you quick health insights. Always consult a doctor for medical advice.</div></div>
+      </div>
+      <div class="chat-input">
+        <input id="chatInput" placeholder="e.g. headache and sore throat for 2 days..." onkeydown="if(event.key==='Enter')sendMsg()"/>
+        <button id="sendBtn" onclick="sendMsg()">Send</button>
+      </div>
+    </div>
+    <p class="disclaimer">⚠️ For informational purposes only. Not a substitute for professional medical advice.</p>
+  </div>
+</div>
+
+<!-- AI INSIGHTS -->
+<div class="page" id="page-AI Insights">
+  <div class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:1rem">
+      <div><h2>AI Health Insights</h2></div>
+      <button class="print-btn" id="printInsightBtn" onclick="printInsight()" style="display:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path></svg>Print Insight</button>
+    </div>
+    <p class="sub">Select a topic to get AI-powered health information.</p>
+    <div class="topic-pills" id="topicPills"></div>
+    <div id="insightArea"><div class="empty">Select a topic above to get AI health insights</div></div>
+  </div>
+</div>
+
+<!-- HEALTH TIPS -->
+<div class="page" id="page-Health Tips">
+  <div class="section">
+    <h2>Health Tips</h2>
+    <p class="sub">Daily evidence-based tips for patients and caregivers.</p>
+    <div class="tips-grid" id="tipsGrid"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="page" id="page-Dashboard">
+  <div class="section">
+    <div class="dash-header">
+      <div>
+        <h2>Health Dashboard</h2>
+        <button class="print-btn" id="printDashboardBtn" onclick="printDashboard()" style="display:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path></svg>Print Report</button>
+      </div>
+      <button class="clear-btn" id="clearBtn" onclick="clearHistory()" style="display:none">Clear history</button>
+    </div>
+    <p class="sub">Your real symptom check history — updated every time you use the Symptom Checker.</p>
+    <div class="stats-grid" id="statsGrid"></div>
+    <div id="historyArea"></div>
+  </div>
+</div>
+
+<!-- ABOUT & CONTACT -->
+<div class="page" id="page-About & Contact">
+  <div class="section">
+    <div class="about-hero">
+      <div style="font-size:36px">🩺</div>
+      <h2>About VitaCheck</h2>
+      <p>VitaCheck AI is an intelligent health assistant built to empower patients and caregivers with instant symptom analysis, health insights, and preventive care guidance.</p>
+    </div>
+    <div class="values-grid">
+      <div class="value-card"><div class="value-title">Mission</div><div class="value-desc">Accessible health information for all</div></div>
+      <div class="value-card"><div class="value-title">Vision</div><div class="value-desc">A healthier world through AI</div></div>
+      <div class="value-card"><div class="value-title">Values</div><div class="value-desc">Empathy, accuracy, privacy</div></div>
+    </div>
+    <h3 style="color:#333;font-weight:500;margin-bottom:12px">Contact Us</h3>
+    <div id="contactArea">
+      <div class="contact-form">
+        <input id="cName" placeholder="Your name"/>
+        <input id="cEmail" placeholder="Email address"/>
+        <textarea id="cMsg" placeholder="Your message..." rows="4"></textarea>
+        <button class="btn-primary" onclick="submitContact()">Send Message</button>
+      </div>
+    </div>
+    <p style="font-size:12px;color:#999;margin-top:2rem;text-align:center;line-height:1.6">⚠️ VitaCheck AI provides general health information only. Not a substitute for professional medical advice.</p>
+  </div>
+</div>
+
+<script>
+const PAGES = ["Home","Symptom Checker","AI Insights","Health Tips","Dashboard","About & Contact"];
+const TOPICS = ["Heart Health","Diabetes","Nutrition","Mental Health","Sleep","Immunity","Blood Pressure","Hydration"];
+const TIPS_DATA = [
+  {cat:"Nutrition",icon:"🥗",tips:["Eat 5 servings of fruits & vegetables daily","Stay hydrated — aim for 8 glasses of water","Limit processed foods and added sugar"]},
+  {cat:"Exercise",icon:"🏃",tips:["30 minutes of moderate activity most days","Strength training 2x per week","Stretch after every workout"]},
+  {cat:"Sleep",icon:"😴",tips:["Aim for 7–9 hours per night","Keep a consistent sleep schedule","Avoid screens 1 hour before bed"]},
+  {cat:"Mental Health",icon:"🧠",tips:["Practice 10 minutes of mindfulness daily","Connect with loved ones regularly","Take breaks during stressful tasks"]},
+  {cat:"Preventive Care",icon:"🩺",tips:["Schedule annual check-ups","Keep vaccinations up to date","Know your family health history"]},
+  {cat:"Hygiene",icon:"🧼",tips:["Wash hands for 20 seconds frequently","Dental check-up every 6 months","Disinfect high-touch surfaces regularly"]},
+];
+
+const INSIGHTS_DATA = {
+  "Heart Health":"Keep active, manage stress, and eat whole foods. Watch blood pressure and avoid smoking. Talk to a clinician if you feel chest discomfort or dizziness.",
+  "Diabetes":"Balance carbohydrates with protein and fiber. Monitor blood sugar with regular meals and exercise. Stay hydrated and check with a doctor if you notice frequent thirst or fatigue.",
+  "Nutrition":"Choose colorful fruits and vegetables, lean proteins, and whole grains. Limit added sugars and salty snacks. Aim for consistent meals and healthy hydration.",
+  "Mental Health":"Take short breaks, connect with friends, and practice deep breathing. Small daily routines improve mood. Reach out to a professional if stress feels overwhelming.",
+  "Sleep":"Keep a consistent bedtime, limit screen time before bed, and create a calm sleep space. Aim for 7–9 hours nightly. If sleep is poor for many nights, talk to a healthcare provider.",
+  "Immunity":"Eat vitamin-rich foods, sleep well, and stay active. Wash hands regularly and protect yourself in crowded places. See a doctor for persistent fever or swollen glands.",
+  "Blood Pressure":"Reduce salt, stay active, and manage stress. Check readings often and follow your physician's advice. Contact a healthcare provider for very high pressure or headaches.",
+  "Hydration":"Drink water throughout the day and include hydrating foods like fruits. Limit sugary drinks and alcohol. If you're dizzy or have dark urine, drink fluids and rest."
+};
+
+const USERS_KEY = "vitacheck_users";
+const CURRENT_USER_KEY = "vitacheck_current_user";
+const HISTORY_KEY_PREFIX = "vitacheck_history_";
+
+let history = [];
+let activeTopic = "";
+let openTip = null;
+let chatLoading = false;
+let currentUser = null;
+let lastSymptomResult = null;
+
+function storageGet(key) {
+  try {
+    const value = localStorage.getItem(key);
+    return value ? JSON.parse(value) : null;
+  } catch {
+    return null;
+  }
+}
+function storageSet(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {}
+}
+function storageRemove(key) {
+  try { localStorage.removeItem(key); } catch {}
+}
+function getCurrentUser() {
+  return storageGet(CURRENT_USER_KEY);
+}
+function setCurrentUser(user) {
+  currentUser = user;
+  if (user) {
+    storageSet(CURRENT_USER_KEY, user);
+  } else {
+    storageRemove(CURRENT_USER_KEY);
+  }
+  updateAuthUi();
+}
+function currentHistoryKey() {
+  return currentUser ? HISTORY_KEY_PREFIX + currentUser.email : null;
+}
+function loadHistory() {
+  if (!currentUser) {
+    history = [];
+    updateHeroScore();
+    renderDashboard();
+    return;
+  }
+  history = storageGet(currentHistoryKey()) || [];
+  updateHeroScore();
+  renderDashboard();
+}
+function saveHistory() {
+  if (!currentUser) return;
+  storageSet(currentHistoryKey(), history);
+}
+function clearHistory() {
+  history = [];
+  if (currentUser) storageRemove(currentHistoryKey());
+  updateHeroScore();
+  renderDashboard();
+}
+
+function buildNav() {
+  const nl = document.getElementById("navLinks");
+  const mm = document.getElementById("mobileMenu");
+  nl.innerHTML = "";
+  mm.innerHTML = "";
+  PAGES.forEach(p => {
+    const b = document.createElement("button");
+    b.className = "nav-btn" + (p==="Home"?" active":"");
+    b.textContent = p;
+    b.onclick = () => goTo(p);
+    nl.appendChild(b);
+    const mb = document.createElement("button");
+    mb.className = "mobile-btn" + (p==="Home"?" active":"");
+    mb.textContent = p;
+    mb.onclick = () => { goTo(p); toggleMenu(false); };
+    mm.appendChild(mb);
+  });
+}
+function goTo(p) {
+  if (p !== "Login" && p !== "Signup" && !currentUser) {
+    p = "Login";
+  }
+  document.querySelectorAll(".page").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b => { b.classList.toggle("active", b.textContent===p); });
+  document.querySelectorAll(".mobile-btn").forEach(b => { b.classList.toggle("active", b.textContent===p); });
+  const pg = document.getElementById("page-"+p);
+  if (pg) pg.classList.add("active");
+  if (p==="Dashboard") renderDashboard();
+}
+function toggleMenu(force) {
+  const m = document.getElementById("mobileMenu");
+  m.classList.toggle("open", force !== undefined ? force : !m.classList.contains("open"));
+}
+
+function updateHeroScore() {
+  const avg = history.length ? Math.round(history.reduce((s,h)=>s+h.score,0)/history.length) : 85;
+  document.getElementById("heroScoreFill").style.width = avg+"%";
+  document.getElementById("heroScoreVal").textContent = avg+" / 100";
+  document.getElementById("heroScoreLabel").textContent = history.length ? `(avg of ${history.length} check${history.length>1?"s":""})` : "";
+}
+
+function sendMsg() {
+  if (chatLoading) return;
+  const inp = document.getElementById("chatInput");
+  const txt = inp.value.trim();
+  if (!txt) return;
+  inp.value = "";
+  appendBubble(txt, "user");
+  chatLoading = true;
+  document.getElementById("sendBtn").disabled = true;
+  const typing = appendBubble("Analyzing...", "ai");
+  try {
+    const analysis = analyzeSymptoms(txt);
+    typing.textContent = analysis.reply;
+    const score = analysis.score;
+    lastSymptomResult = {
+      symptoms: txt,
+      analysis: analysis.reply,
+      score: score,
+      date: new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}),
+      time: new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})
+    };
+    document.getElementById("printSymptomBtn").style.display = "flex";
+    history.unshift({
+      date: lastSymptomResult.date,
+      time: lastSymptomResult.time,
+      symptoms: txt.length>60 ? txt.slice(0,57)+"..." : txt,
+      score,
+      status: score>=85?"Excellent":score>=75?"Good":score>=65?"Moderate":"Needs attention"
+    });
+    saveHistory();
+    updateHeroScore();
+  } catch {
+    typing.textContent = "Unable to analyze offline. Try different words.";
+  }
+  chatLoading = false;
+  document.getElementById("sendBtn").disabled = false;
+}
+function appendBubble(txt, role) {
+  const msgs = document.getElementById("chatMsgs");
+  const row = document.createElement("div");
+  row.className = "msg " + role;
+  const b = document.createElement("div");
+  b.className = "bubble " + role;
+  b.textContent = txt;
+  row.appendChild(b);
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+  return b;
+}
+function analyzeSymptoms(text) {
+  const lower = text.toLowerCase();
+  const rules = [
+    {keywords:["chest pain","shortness of breath","short breath","tightness","pressure"],score:55,causes:["heart strain","high blood pressure","anxiety"],tip:"Stop activity and rest; seek help if it worsens."},
+    {keywords:["fever","cough","sore throat","body ache"],score:70,causes:["viral infection","cold","flu"],tip:"Stay hydrated and rest; watch for high fever."},
+    {keywords:["headache","migraine","light sensitivity"],score:72,causes:["stress","dehydration","tension"],tip:"Drink water, rest in a quiet room, and avoid screens."},
+    {keywords:["stomach","nausea","vomit","diarrhea"],score:68,causes:["upset stomach","food reaction","virus"],tip:"Eat bland foods and stay hydrated."},
+    {keywords:["back pain","joint pain","stiff"],score:76,causes:["muscle strain","poor posture","overuse"],tip:"Move gently, stretch, and rest the affected area."},
+    {keywords:["anxiety","panic","heart racing","nervous"],score:75,causes:["stress","anxiety","sleep loss"],tip:"Breathe deeply and try a short calming break."}
+  ];
+  let match = rules.find(rule => rule.keywords.some(k => lower.includes(k)));
+  if (!match) {
+    const generic = lower.match(/(pain|ache|tired|weak|dizzy|rash|cold|fever|chest|head|stomach|sleep|anxiety)/);
+    match = generic ? {score:78,causes:["mild infection","stress","dehydration"],tip:"Rest, hydrate, and monitor symptoms."} : {score:82,causes:["common condition","stress","mild fatigue"],tip:"Take it easy, drink water, and see how you feel."};
+  }
+  return {
+    score: match.score,
+    reply: `I hear you. Possible causes: ${match.causes.join(", ")}. Tip: ${match.tip} Score: ${match.score}/100. ⚠️ See a doctor if symptoms worsen.`
+  };
+}
+
+function buildTopics() {
+  const c = document.getElementById("topicPills");
+  c.innerHTML = "";
+  TOPICS.forEach(t => {
+    const b = document.createElement("button");
+    b.className = "pill";
+    b.textContent = t;
+    b.onclick = () => loadInsight(t, b);
+    c.appendChild(b);
+  });
+}
+function loadInsight(t, btn) {
+  document.querySelectorAll(".pill").forEach(p => p.classList.remove("active"));
+  btn.classList.add("active");
+  activeTopic = t;
+  document.getElementById("insightArea").innerHTML = `<div class="insight-card"><span class="insight-tag">${t}</span><div class="insight-text">${INSIGHTS_DATA[t] || "Insight not available offline."}</div></div>`;
+  document.getElementById("printInsightBtn").style.display = "flex";
+}
+
+function buildTips() {
+  const g = document.getElementById("tipsGrid");
+  g.innerHTML = "";
+  TIPS_DATA.forEach(t => {
+    const c = document.createElement("div");
+    c.className = "tip-card";
+    c.innerHTML = `<div class="tip-icon">${t.icon}</div><div class="tip-title">${t.cat}</div><div class="tip-body"></div>`;
+    const body = c.querySelector(".tip-body");
+    body.innerHTML = `<span class="tip-hint">Tap to expand</span>`;
+    c.onclick = () => {
+      const isOpen = c.classList.contains("open");
+      document.querySelectorAll(".tip-card").forEach(x => { x.classList.remove("open"); x.querySelector(".tip-body").innerHTML=`<span class="tip-hint">Tap to expand</span>`; });
+      if (!isOpen) {
+        c.classList.add("open");
+        body.innerHTML = `<ul>${t.tips.map(tp=>`<li>${tp}</li>`).join("")}</ul>`;
+      }
+    };
+    g.appendChild(c);
+  });
+}
+
+function statusStyle(score) {
+  if (score>=85) return "background:#E1F5EE;color:#0F6E56";
+  if (score>=75) return "background:#fff8e1;color:#b45309";
+  return "background:#FAECE7;color:#D85A30";
+}
+function renderDashboard() {
+  const total = history.length;
+  const avg = total ? Math.round(history.reduce((s,h)=>s+h.score,0)/total) : "--";
+  const last = total ? history[0].date : "--";
+  const week = Math.min(total,7);
+  document.getElementById("clearBtn").style.display = total ? "block" : "none";
+  document.getElementById("printDashboardBtn").style.display = total ? "flex" : "none";
+  document.getElementById("statsGrid").innerHTML = [
+    ["Total Checks",total],["Avg Score",avg],["Last Check",last],[`This Week`,week+" check"+(week!==1?"s":"")]
+  ].map(([l,v])=>`<div class="stat"><div class="stat-val">${v}</div><div class="stat-label">${l}</div></div>`).join("");
+  if (!total) {
+    document.getElementById("historyArea").innerHTML = `<div class="empty-dash">No checks yet. Head to <strong>Symptom Checker</strong> to get started.</div>`;
+    return;
+  }
+  document.getElementById("historyArea").innerHTML = `
+    <h3 style="color:#333;font-weight:500;margin-bottom:12px">Recent Checks</h3>
+    <div class="history-list">
+      ${history.map(h=>`
+        <div class="history-item">
+          <div><div class="h-symptoms">${h.symptoms}</div><div class="h-date">${h.date}${h.time?" · "+h.time:""}</div></div>
+          <div class="h-right">
+            <span class="status-badge" style="${statusStyle(h.score)}">${h.status}</span>
+            <span class="h-score">${h.score}/100</span>
+          </div>
+        </div>`).join("")}
+    </div>`;
+}
+
+function submitContact() {
+  const n = document.getElementById("cName").value;
+  const e = document.getElementById("cEmail").value;
+  const m = document.getElementById("cMsg").value;
+  if (n && e && m) document.getElementById("contactArea").innerHTML = `<div class="success-msg">✓ Message saved locally. VitaCheck works offline from here.</div>`;
+}
+
+function printSymptomResult() {
+  if (!lastSymptomResult) return;
+  const r = lastSymptomResult;
+  const w = window.open("", "_blank");
+  w.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>VitaCheck - Symptom Report</title>
+      <style>
+        body{font-family:system-ui,sans-serif;max-width:800px;margin:0;padding:20px;background:#fff}
+        .print-header{border-bottom:2px solid #0F6E56;padding-bottom:20px;margin-bottom:20px}
+        .print-header h1{color:#0F6E56;margin:0;font-size:24px}
+        .print-date{color:#999;font-size:12px;margin-top:8px}
+        .report-section{margin-bottom:20px;page-break-inside:avoid}
+        .report-section h3{color:#0F6E56;font-size:14px;margin-bottom:10px;border-bottom:1px solid #e0e0e0;padding-bottom:8px}
+        .report-value{margin-bottom:12px;line-height:1.8}
+        .score-badge{display:inline-block;background:#E1F5EE;color:#0F6E56;padding:8px 16px;border-radius:8px;font-weight:600;font-size:18px;margin-bottom:16px}
+        .disclaimer{background:#FAECE7;color:#D85A30;padding:12px;border-radius:8px;margin-top:20px;font-size:12px}
+        @media print{body{margin:0;padding:0}.no-print{display:none}}
+      </style>
+    </head>
+    <body>
+      <div class="print-header">
+        <h1>🩺 VitaCheck AI - Symptom Report</h1>
+        <div class="print-date">Generated: ${r.date} at ${r.time}</div>
+      </div>
+      <div class="report-section">
+        <h3>Symptom Report</h3>
+        <div class="report-value"><strong>Symptoms Described:</strong></div>
+        <div class="report-value">${r.symptoms}</div>
+      </div>
+      <div class="report-section">
+        <div class="score-badge">Health Score: ${r.score}/100</div>
+        <h3>AI Analysis</h3>
+        <div class="report-value">${r.analysis.replace(/\n/g, '<br>')}</div>
+      </div>
+      <div class="disclaimer">
+        ⚠️ <strong>Disclaimer:</strong> This report is for informational purposes only and is not a substitute for professional medical advice. Always consult with a healthcare provider for medical concerns.
+      </div>
+    </body>
+    </html>
+  `);
+  w.document.close();
+  w.print();
+}
+
+function printInsight() {
+  if (!activeTopic) return;
+  const w = window.open("", "_blank");
+  w.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>VitaCheck - Health Insight</title>
+      <style>
+        body{font-family:system-ui,sans-serif;max-width:800px;margin:0;padding:20px;background:#fff}
+        .print-header{border-bottom:2px solid #0F6E56;padding-bottom:20px;margin-bottom:20px}
+        .print-header h1{color:#0F6E56;margin:0;font-size:24px}
+        .topic-badge{display:inline-block;background:#E1F5EE;color:#0F6E56;padding:8px 16px;border-radius:20px;font-weight:500;font-size:13px;margin-bottom:16px}
+        .insight-content{line-height:1.8;font-size:14px;margin-bottom:20px;color:#333}
+        .disclaimer{background:#FAECE7;color:#D85A30;padding:12px;border-radius:8px;margin-top:20px;font-size:12px}
+        @media print{body{margin:0;padding:0}}
+      </style>
+    </head>
+    <body>
+      <div class="print-header">
+        <h1>🩺 VitaCheck AI - Health Insight</h1>
+      </div>
+      <div class="topic-badge">${activeTopic}</div>
+      <div class="insight-content">
+        ${INSIGHTS_DATA[activeTopic]}
+      </div>
+      <div class="disclaimer">
+        ⚠️ <strong>Disclaimer:</strong> This information is for educational purposes only and is not a substitute for professional medical advice. Always consult with a healthcare provider for medical concerns.
+      </div>
+    </body>
+    </html>
+  `);
+  w.document.close();
+  w.print();
+}
+
+function printDashboard() {
+  if (!history.length) return;
+  const total = history.length;
+  const avg = Math.round(history.reduce((s,h)=>s+h.score,0)/total);
+  const w = window.open("", "_blank");
+  let historyRows = history.map(h => `
+    <tr>
+      <td style="padding:10px;border-bottom:1px solid #e0e0e0">${h.date}${h.time?" "+h.time:""}</td>
+      <td style="padding:10px;border-bottom:1px solid #e0e0e0">${h.symptoms}</td>
+      <td style="padding:10px;border-bottom:1px solid #e0e0e0;font-weight:500">${h.status}</td>
+      <td style="padding:10px;border-bottom:1px solid #e0e0e0;text-align:center;font-weight:600;color:#0F6E56">${h.score}/100</td>
+    </tr>
+  `).join("");
+  w.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>VitaCheck - Health Dashboard Report</title>
+      <style>
+        body{font-family:system-ui,sans-serif;max-width:900px;margin:0;padding:20px;background:#fff}
+        .print-header{border-bottom:2px solid #0F6E56;padding-bottom:20px;margin-bottom:20px}
+        .print-header h1{color:#0F6E56;margin:0;font-size:24px}
+        .print-date{color:#999;font-size:12px;margin-top:8px}
+        .stats-table{width:100%;margin-bottom:20px}
+        .stats-table td{padding:12px;text-align:center;border:1px solid #e0e0e0}
+        .stats-table .stat-label{font-weight:500;color:#555;background:#f9f9f9}
+        .stats-table .stat-val{font-weight:600;color:#0F6E56;font-size:18px}
+        table{width:100%;border-collapse:collapse;margin-bottom:20px}
+        th{background:#E1F5EE;color:#0F6E56;padding:12px;text-align:left;font-weight:600;border:1px solid #d0d0d0}
+        .disclaimer{background:#FAECE7;color:#D85A30;padding:12px;border-radius:8px;margin-top:20px;font-size:12px}
+        @media print{body{margin:0;padding:0}.no-print{display:none}}
+      </style>
+    </head>
+    <body>
+      <div class="print-header">
+        <h1>🩺 VitaCheck AI - Health Dashboard Report</h1>
+        <div class="print-date">Generated: ${new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"})} at ${new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"})}</div>
+      </div>
+      <h3 style="color:#333;margin-bottom:12px">Summary Statistics</h3>
+      <table class="stats-table">
+        <tr>
+          <td class="stat-label">Total Checks</td>
+          <td class="stat-val">${total}</td>
+          <td class="stat-label">Average Score</td>
+          <td class="stat-val">${avg}/100</td>
+        </tr>
+      </table>
+      <h3 style="color:#333;margin-bottom:12px">Check History</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Date & Time</th>
+            <th>Symptoms</th>
+            <th>Status</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${historyRows}
+        </tbody>
+      </table>
+      <div class="disclaimer">
+        ⚠️ <strong>Disclaimer:</strong> This report contains your health check history from VitaCheck AI and is for your personal records. This information is not a substitute for professional medical advice. Always consult with a healthcare provider for medical concerns.
+      </div>
+    </body>
+    </html>
+  `);
+  w.document.close();
+  w.print();
+}
+
+
+function login() {
+  const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+  const password = document.getElementById("loginPassword").value.trim();
+  const msg = document.getElementById("authMessage");
+  msg.textContent = "";
+  if (!email || !password) {
+    msg.textContent = "Please enter both email and password.";
+    return;
+  }
+  const users = storageGet(USERS_KEY) || [];
+  const user = users.find(u => u.email === email && u.password === password);
+  if (!user) {
+    msg.textContent = "Invalid email or password.";
+    return;
+  }
+  setCurrentUser(user);
+  buildNav();
+  goTo("Home");
+  loadHistory();
+}
+
+function signup() {
+  const name = document.getElementById("signupName").value.trim();
+  const email = document.getElementById("signupEmail").value.trim().toLowerCase();
+  const password = document.getElementById("signupPassword").value.trim();
+  const confirm = document.getElementById("signupConfirm").value.trim();
+  const msg = document.getElementById("authMessageSignup");
+  msg.textContent = "";
+  if (!name || !email || !password || !confirm) {
+    msg.textContent = "Please complete all signup fields.";
+    return;
+  }
+  if (password !== confirm) {
+    msg.textContent = "Passwords do not match.";
+    return;
+  }
+  const users = storageGet(USERS_KEY) || [];
+  if (users.some(u => u.email === email)) {
+    msg.textContent = "An account with that email already exists.";
+    return;
+  }
+  const user = {name, email, password};
+  users.push(user);
+  storageSet(USERS_KEY, users);
+  setCurrentUser(user);
+  buildNav();
+  goTo("Home");
+  loadHistory();
+}
+
+function logout() {
+  setCurrentUser(null);
+  document.getElementById("authMessage").textContent = "You are signed out.";
+  document.getElementById("authMessageSignup").textContent = "";
+  document.getElementById("loginEmail").value = "";
+  document.getElementById("loginPassword").value = "";
+  document.getElementById("signupName").value = "";
+  document.getElementById("signupEmail").value = "";
+  document.getElementById("signupPassword").value = "";
+  document.getElementById("signupConfirm").value = "";
+  goTo("Login");
+}
+
+function updateAuthUi() {
+  const nav = document.querySelector("nav");
+  const hasUser = !!currentUser;
+  nav.style.display = hasUser ? "flex" : "none";
+  document.getElementById("logoutBtn").style.display = hasUser ? "inline-flex" : "none";
+  document.getElementById("userLabel").style.display = hasUser ? "inline" : "none";
+  document.getElementById("userLabel").textContent = hasUser ? `Hi, ${currentUser.name}` : "";
+  if (!hasUser) {
+    document.querySelectorAll(".page").forEach(el => el.classList.remove("active"));
+    document.getElementById("page-Login").classList.add("active");
+  }
+}
+
+buildNav();
+buildTopics();
+buildTips();
+setCurrentUser(getCurrentUser());
+if (currentUser) {
+  loadHistory();
+  goTo("Home");
+} else {
+  goTo("Login");
+}
+</script>
+</body>
+</html>
